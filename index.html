@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+		<script src="three.js"></script>
+		<script>
+			const scene = new THREE.Scene();
+			const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			const renderer = new THREE.WebGLRenderer();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			const geometry = new THREE.BoxGeometry(1,1,1)
+            const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+            const cube = new THREE.Mesh( geometry, material );
+            scene.add( cube );
+
+			camera.position.z = 5;
+
+			cube.rotation.x += 0.5;
+			cube.rotation.y += 0.5;
+
+			function movePosition(obj, x, y, z, milliseconds) {
+				const startTime = Date.now()
+				const frequency = 60
+				const basePosition = {
+					x: obj.position.x,
+					y: obj.position.y,
+					z: obj.position.z
+				}
+				const finalPosition = { x, y, z }
+				const deltas = {
+					x: (finalPosition.x - basePosition.x) / (milliseconds * frequency / 1000),
+					y: (finalPosition.y - basePosition.y) / (milliseconds * frequency / 1000),
+					z: (finalPosition.z - basePosition.z) / (milliseconds * frequency / 1000)
+				}
+				const animate = function () {
+					if (Date.now() - startTime < milliseconds) {
+						requestAnimationFrame(animate)
+						obj.position.x += deltas.x
+						obj.position.y += deltas.y
+						obj.position.z += deltas.z
+						renderer.render( scene, camera );
+					}
+				}
+				animate()
+			}
+			// movePosition(cube, 1, 2, 3, 3000)
+
+			function moveRotation(obj, x, y, z, milliseconds, shortestDist = true) {
+				const startTime = Date.now()
+				const frequency = 60
+				const baseRotation = {
+					x: obj.rotation.x,
+					y: obj.rotation.y,
+					z: obj.rotation.z
+				}
+				const finalRotation = { x, y, z }
+				let deltas = {}
+
+				function getLongDist(xyz) {
+					const dist = finalRotation[xyz] - baseRotation[xyz]
+					const rotations = ~~(dist / (Math.PI*2))
+					const cleanDist = dist - rotations * Math.PI*2
+					const cleanShortDist = cleanDist < Math.PI? cleanDist: 2*Math.PI - cleanDist
+					const cleanLongDist = cleanDist >= Math.PI? cleanDist: 2*Math.PI - cleanDist
+					const scrollDirection = cleanShortDist < 0? 1: -1
+					return -1 * scrollDirection * (rotations*Math.PI*2 + cleanLongDist)
+				}
+				function getShortDist(xyz) {
+					const dist = finalRotation[xyz] - baseRotation[xyz]
+					const rotations = ~~(dist / (Math.PI*2))
+					const cleanDist = dist - rotations * Math.PI*2
+					const cleanShortDist = cleanDist < Math.PI? cleanDist: 2*Math.PI - cleanDist
+					const scrollDirection = cleanShortDist < 0? 1: -1
+					return scrollDirection * (rotations*Math.PI*2 + cleanShortDist)
+				}
+
+				if (shortestDist) {
+					deltas = {
+						x: (getShortDist('x')) / (milliseconds * frequency / 1000),
+						y: (getShortDist('y')) / (milliseconds * frequency / 1000),
+						z: (getShortDist('z')) / (milliseconds * frequency / 1000),
+					}
+				} else {
+					deltas = {
+						x: (getLongDist('x')) / (milliseconds * frequency / 1000),
+						y: (getLongDist('y')) / (milliseconds * frequency / 1000),
+						z: (getLongDist('z')) / (milliseconds * frequency / 1000),
+					}
+				}
+				const animate = function () {
+					if (Date.now() - startTime < milliseconds) {
+						requestAnimationFrame(animate)
+						obj.rotation.x += deltas.x
+						obj.rotation.y += deltas.y
+						obj.rotation.z += deltas.z
+						renderer.render( scene, camera );
+					}
+				}
+				animate()
+			}
+
+			// cube.rotation.x = 0
+			// cube.rotation.y = 0
+			// cube.rotation.z = 0
+
+			moveRotation(cube, 0, 3*Math.PI/2, 0, 3000)
+			renderer.render( scene, camera );
+		</script>
+	</body>
+</html>
